@@ -55,3 +55,6 @@ chatbot/
 
 # Personal notes
 thoughts.txt
+
+# Local Netlify folder
+.netlify
