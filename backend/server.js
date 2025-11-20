@@ -9,24 +9,22 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = 5009;
-
-// اختبار السيرفر
 app.get('/', (req, res) => {
   res.send("Server is running ✅");
 });
 
-// endpoint للتحقق من API key
+
 app.get('/check-api', (req, res) => {
   const hasApiKey = !!process.env.GOOGLE_API_KEY;
   res.json({ 
     hasApiKey,
     message: hasApiKey 
-      ? 'API key موجود ✅' 
-      : 'API key غير موجود ❌ - يرجى إضافة GOOGLE_API_KEY في ملف .env'
+      ? 'API key found ✅' 
+      : 'API key not found'
   });
 });
 
-// endpoint لاختبار النماذج المتاحة
+// endpoint test
 app.get('/test-models', async (req, res) => {
   if (!process.env.GOOGLE_API_KEY) {
     return res.json({ error: 'API key غير موجود' });
@@ -68,100 +66,99 @@ app.get('/test-models', async (req, res) => {
   res.json({ results });
 });
 
-// Endpoint للبوت
+
+
+// ============================================
+// 📝 Endpoint للبوت - استقبال الطلب من Frontend
+// ============================================
 app.post('/chat', async (req, res) => {
+
   const { message, history = [] } = req.body;
 
-  // التحقق من وجود API key
   if (!process.env.GOOGLE_API_KEY) {
     console.error('GOOGLE_API_KEY is not set in environment variables');
-    return res.status(500).json({ reply: "API key غير موجود. يرجى إضافة GOOGLE_API_KEY في ملف .env" });
+
+    return res.status(500).json({ reply: "api key not found please add it to the .env file" });
   }
 
-  // التحقق من وجود الرسالة
   if (!message) {
-    return res.status(400).json({ reply: "الرسالة فارغة" });
+    return res.status(400).json({ reply: "message is empty" });
   }
 
+  // ============================================
+  //start connect to gemini 
+  // ============================================
   try {
-    // قائمة النماذج المتاحة بالترتيب (الأول هو المفضل)
-    // النماذج المتاحة من API
-    const models = [
-      { name: "gemini-2.5-flash", version: "v1beta" },
-      { name: "gemini-2.5-pro-preview-03-25", version: "v1beta" },
-      { name: "gemini-1.5-flash", version: "v1beta" },
-      { name: "gemini-1.5-pro", version: "v1beta" }
-    ];
 
-    let lastError = null;
+    const modelName = "gemini-2.5-flash";
+    const modelVersion = "v1beta";
+    const apiUrl = `https://generativelanguage.googleapis.com/${modelVersion}/models/${modelName}:generateContent?key=${process.env.GOOGLE_API_KEY}`;
     
-    // تجربة كل نموذج حتى ينجح أحدهم
-    for (const { name, version } of models) {
-      try {
-        const apiUrl = `https://generativelanguage.googleapis.com/${version}/models/${name}:generateContent?key=${process.env.GOOGLE_API_KEY}`;
-        
-        // بناء محتوى المحادثة مع التاريخ
-        const contents = [];
-        
-        // إضافة تاريخ المحادثة (آخر 10 رسائل لتجنب تجاوز الحد الأقصى)
-        const recentHistory = history.slice(-10);
-        recentHistory.forEach(msg => {
-          contents.push({
-            role: msg.role || (msg.sender === 'user' ? 'user' : 'model'),
-            parts: msg.parts || [{ text: msg.message || msg.text }]
-          });
-        });
-        
-        // إضافة الرسالة الحالية
-        contents.push({
-          role: 'user',
-          parts: [{ text: message }]
-        });
-
-        const response = await fetch(apiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            contents: contents,
-            generationConfig: {
-              maxOutputTokens: 500,
-              temperature: 0.7
-            }
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          lastError = { status: response.status, message: errorData.error?.message || 'Unknown error' };
-          console.log(`Model ${name} (${version}) failed:`, lastError);
-          continue; // جرب النموذج التالي
-        }
-
-        const data = await response.json();
-        const botReply = data.candidates?.[0]?.content?.parts?.[0]?.text || 
-                         data.candidates?.[0]?.output || 
-                         "لم يتم الحصول على رد";
-
-        return res.json({ reply: botReply });
-        
-      } catch (modelError) {
-        lastError = { message: modelError.message };
-        console.log(`Model ${name} (${version}) error:`, modelError.message);
-        continue; // جرب النموذج التالي
-      }
-    }
-
-    // إذا فشلت جميع النماذج
-    console.error('All models failed. Last error:', lastError);
-    return res.status(500).json({ 
-      reply: `خطأ في API. ${lastError?.message || 'جميع النماذج فشلت'}. يرجى التحقق من API key والنماذج المتاحة.` 
+    // ============================================
+    // (Conversation Contents)
+    // ============================================
+    const contents = [];
+  
+    const recentHistory = history.slice(-10); // أخذ آخر 10 رسائل
+    recentHistory.forEach(msg => {
+      contents.push({
+        role: msg.role || (msg.sender === 'user' ? 'user' : 'model'),
+        parts: msg.parts || [{ text: msg.message || msg.text }]
+      });
+    });
+    
+    contents.push({
+      role: 'user',
+      parts: [{ text: message }]
     });
 
+    // ============================================
+    // send request to gemini api
+    // ============================================
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: contents, 
+        generationConfig: {
+          maxOutputTokens: 500, // الحد الأقصى للرد
+          temperature: 0.7 // درجة الإبداع (0-1)
+        }
+      }),
+    });
+
+    // ============================================
+    // check if the request is successful
+    // ============================================
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.error?.message || `HTTP error: ${response.status}`;
+      console.error(`API request failed:`, errorMessage);
+      return res.status(500).json({ 
+        reply: `خطأ في API: ${errorMessage}` 
+      });
+    }
+
+
+    const data = await response.json();
+    // data.candidates[0].content.parts[0].text يحتوي على رد البوت
+    const botReply = data.candidates?.[0]?.content?.parts?.[0]?.text || 
+                     data.candidates?.[0]?.output || 
+                     "لم يتم الحصول على رد";
+
+    // ============================================
+    // 📝 الخطوة 12: إرجاع الرد إلى Frontend ✅
+    // ============================================
+    // res.json() يرسل JSON response إلى Frontend
+    // Frontend سيستقبل هذا في data.reply
+    return res.json({ reply: botReply });
+
   } catch (err) {
+  
     console.error('Error:', err);
-    res.status(500).json({ reply: `حدث خطأ في الاتصال بالبوت: ${err.message}` });
+    res.status(500).json({ reply: `error on ${err.message}` });
   }
 });
 

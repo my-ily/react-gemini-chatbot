@@ -44,3 +44,8 @@ coverage/
 # Misc
 *.pem
 .cache/
+
+# Flowchart files
+*FLOWCHART*
+*flowchart*
+FLOW_EXPLANATION.md

@@ -3,3 +3,8 @@ i learn alot how to use it in real projecttt
 style and anyoing things cursor do 
 but the start of state or idea i write it so i beging to thinking 
 next step is understanding reallyy good so you prepere to make it cleaner
+
+
+
+now what to fix
+1- make suggest appier above the input and hide it
