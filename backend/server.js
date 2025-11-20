@@ -8,7 +8,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = 5009;
+const PORT = process.env.PORT || 5009;
 app.get('/', (req, res) => {
   res.send("Server is running ✅");
 });
@@ -27,7 +27,7 @@ app.get('/check-api', (req, res) => {
 // endpoint test
 app.get('/test-models', async (req, res) => {
   if (!process.env.GOOGLE_API_KEY) {
-    return res.json({ error: 'API key غير موجود' });
+    return res.json({ error: 'API key not found' });
   }
 
   const testModels = [
@@ -51,13 +51,13 @@ app.get('/test-models', async (req, res) => {
       
       results.push({
         model: `${name} (${version})`,
-        status: response.ok ? '✅ يعمل' : `❌ ${response.status}`,
+        status: response.ok ? '✅ Working' : `❌ ${response.status}`,
         error: response.ok ? null : (await response.json().catch(() => ({}))).error?.message
       });
     } catch (err) {
       results.push({
         model: `${name} (${version})`,
-        status: '❌ خطأ',
+        status: '❌ Error',
         error: err.message
       });
     }
@@ -69,7 +69,7 @@ app.get('/test-models', async (req, res) => {
 
 
 // ============================================
-// 📝 Endpoint للبوت - استقبال الطلب من Frontend
+// Chat endpoint - receives request from Frontend
 // ============================================
 app.post('/chat', async (req, res) => {
 
@@ -99,7 +99,7 @@ app.post('/chat', async (req, res) => {
     // ============================================
     const contents = [];
   
-    const recentHistory = history.slice(-10); // أخذ آخر 10 رسائل
+    const recentHistory = history.slice(-10);
     recentHistory.forEach(msg => {
       contents.push({
         role: msg.role || (msg.sender === 'user' ? 'user' : 'model'),
@@ -123,8 +123,8 @@ app.post('/chat', async (req, res) => {
       body: JSON.stringify({
         contents: contents, 
         generationConfig: {
-          maxOutputTokens: 500, // الحد الأقصى للرد
-          temperature: 0.7 // درجة الإبداع (0-1)
+          maxOutputTokens: 500,
+          temperature: 0.7
         }
       }),
     });
@@ -137,22 +137,16 @@ app.post('/chat', async (req, res) => {
       const errorMessage = errorData.error?.message || `HTTP error: ${response.status}`;
       console.error(`API request failed:`, errorMessage);
       return res.status(500).json({ 
-        reply: `خطأ في API: ${errorMessage}` 
+        reply: `API error: ${errorMessage}` 
       });
     }
 
 
     const data = await response.json();
-    // data.candidates[0].content.parts[0].text يحتوي على رد البوت
     const botReply = data.candidates?.[0]?.content?.parts?.[0]?.text || 
                      data.candidates?.[0]?.output || 
-                     "لم يتم الحصول على رد";
+                     "No response received";
 
-    // ============================================
-    // 📝 الخطوة 12: إرجاع الرد إلى Frontend ✅
-    // ============================================
-    // res.json() يرسل JSON response إلى Frontend
-    // Frontend سيستقبل هذا في data.reply
     return res.json({ reply: botReply });
 
   } catch (err) {

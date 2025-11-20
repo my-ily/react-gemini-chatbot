@@ -45,7 +45,7 @@ A smart chatbot application built with React and Node.js using Google Gemini AI.
 │   ├── package.json       # Backend dependencies
 │   └── .env              # Environment variables
 │
-├── frontend/
+├── chatbot/
 │   ├── src/
 │   │   ├── App.js        # Main component
 │   │   ├── component/    # Components
@@ -62,6 +62,54 @@ A smart chatbot application built with React and Node.js using Google Gemini AI.
 └── README.md
 ```
 
+## Installation
+
+### 1. Install Backend Dependencies
+```bash
+cd backend
+npm install
+```
+
+### 2. Install Frontend Dependencies
+```bash
+cd ../chatbot
+npm install
+```
+
+### 3. Setup Environment Variables
+Create `.env` file in `backend` folder:
+```env
+GOOGLE_API_KEY=your_google_api_key_here
+```
+
+### 4. Run Backend
+```bash
+cd backend
+npm run dev
+```
+Server runs on: `http://localhost:5009`
+
+### 5. Run Frontend
+```bash
+cd chatbot
+npm start
+```
+App opens on: `http://localhost:3000`
+
+## API Endpoints
+
+- `GET /` - Check server status
+- `GET /check-api` - Verify API key
+- `POST /chat` - Send message to bot
+- `GET /test-models` - Test available models
+
+## Usage
+
+1. Start new chat: Click "New Chat" button
+2. Send message: Type in input field and press "Send"
+3. Load conversation: Click any conversation from sidebar
+4. Delete conversation: Hover over conversation and click delete button
+5. Toggle theme: Use theme toggle button at top
 
 ## Requirements
 
@@ -78,4 +126,4 @@ A smart chatbot application built with React and Node.js using Google Gemini AI.
 
 ## License
 
-
+Open source - free to use.

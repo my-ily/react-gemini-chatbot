@@ -49,3 +49,6 @@ coverage/
 *FLOWCHART*
 *flowchart*
 FLOW_EXPLANATION.md
+
+# Old chatbot folder (replaced by frontend/)
+chatbot/
