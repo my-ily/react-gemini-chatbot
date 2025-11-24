@@ -82,6 +82,12 @@ function App() {
   , []);
 
 
+
+
+
+
+
+
   useEffect(() => {
     if (templates.length > 0) {
       localStorage.setItem('chatTemplates', JSON.stringify(templates));
@@ -172,10 +178,6 @@ const handleSendMessage = async (text) => {
 
   try {
 
-    const conversationHistory = messages.map(msg => ({
-      role: msg.sender === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.message }]
-    }));
 
 
     // BACKEND
@@ -186,8 +188,7 @@ const handleSendMessage = async (text) => {
       method: "POST", 
       headers: { "Content-Type": "application/json" }, 
       body: JSON.stringify({ 
-        message: trimmed, 
-        history: conversationHistory 
+        message: trimmed
       })
     });
 
