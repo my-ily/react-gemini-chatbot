@@ -1,8 +1,10 @@
 import { useState } from 'react';
-
+import { useTheme } from '../context/ThemeContext';
 
 // onSend is the function match the handleSendMessage function in App.js
 function ChatbotInput({ onSend, disabled = false }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [input, setInput] = useState('');
 
   const handleSubmit = (event) => {
@@ -21,13 +23,21 @@ function ChatbotInput({ onSend, disabled = false }) {
         onChange={(event) => setInput(event.target.value)}
         value={input}
         disabled={disabled}
-        className="flex-1 rounded-2xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-4 py-3 text-sm text-slate-700 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none transition focus:border-violet-300 dark:focus:border-violet-600 focus:bg-white dark:focus:bg-dark-surface focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
+        className={`flex-1 rounded-2xl border backdrop-blur-md px-4 py-3 text-sm outline-none transition focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg ${
+          isDark
+            ? 'border-gray-600/50 bg-gray-800/30 text-gray-200 placeholder:text-gray-400 focus:border-gray-500/70 focus:bg-gray-700/40 focus:ring-pink-500/30'
+            : 'border-gray-300/50 bg-white/50 text-gray-700 placeholder:text-gray-500 focus:border-gray-400/70 focus:bg-white/70 focus:ring-gray-400/30'
+        }`}
       />
 
       <button
         type="submit"
         disabled={disabled}
-        className="inline-flex items-center justify-center rounded-2xl bg-violet-600 dark:bg-violet-700 px-3 sm:px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-600/30 dark:shadow-violet-900/50 transition hover:bg-violet-500 dark:hover:bg-violet-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 dark:focus-visible:ring-violet-600 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+        className={`inline-flex items-center justify-center rounded-2xl backdrop-blur-md border px-3 sm:px-6 py-3 text-sm font-semibold shadow-lg transition focus-visible:outline-none focus-visible:ring-2 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 ${
+          isDark
+            ? 'border-gray-600/50 bg-gray-700/30 text-gray-200 hover:bg-gray-600/40 hover:border-gray-500/70 focus-visible:ring-pink-500/50'
+            : 'border-gray-300/50 bg-white/50 text-gray-700 hover:bg-white/70 hover:border-gray-400/70 focus-visible:ring-gray-400/50'
+        }`}
       >
         <span className="hidden sm:inline">{disabled ? 'Sending...' : 'Send'}</span>
         <svg className="sm:hidden" width={28} height={28} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">

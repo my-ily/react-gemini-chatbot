@@ -1,8 +1,9 @@
-import { useState, useEffect, useReducer } from 'react';
+import { useState, useEffect, useReducer, useRef } from 'react';
 import ChatbotInput from './component/ChatbotInput';
 import ChatMessage from './component/ChatMessage';
 import SidebarContainer from './component/SidebarContainer';
 import ThemeToggle from './component/ThemeToggle';
+import { useTheme } from './context/ThemeContext';
 // theme ✅
 //meassges
 // history
@@ -62,12 +63,17 @@ function templatesReducer(state, action) {
 }
 
 function App() {
+  const { theme } = useTheme();
   const [messages, setMessages] = useState(initialMessages);
   const [isLoading, setIsLoading] = useState(false);
   const [currentChatId, setCurrentChatId] = useState(null);
   
   const [showSuggestions, setshowSuggestions] = useState(true);
   const [templates, dispatch] = useReducer(templatesReducer, initTemplates);
+  const [typewriterText, setTypewriterText] = useState('');
+  const typewriterIndexRef = useRef(0);
+  
+  const isDark = theme === 'dark';
 
 
 
@@ -94,9 +100,25 @@ function App() {
     }
   }, [templates]);
 
+  // Typewriter effect
+  useEffect(() => {
+    if (showSuggestions && messages.length === 0) {
+      const text = 'How can I help you today?';
+      setTypewriterText('');
+      typewriterIndexRef.current = 0;
+      
+      const interval = setInterval(() => {
+        if (typewriterIndexRef.current < text.length) {
+          setTypewriterText(text.substring(0, typewriterIndexRef.current + 1));
+          typewriterIndexRef.current += 1;
+        } else {
+          clearInterval(interval);
+        }
+      }, 50);
 
-
-
+      return () => clearInterval(interval);
+    }
+  }, [showSuggestions, messages.length]);
 
 
   const handleSuggestClick = (suggestionText) => {
@@ -129,6 +151,7 @@ function App() {
   const handleLoadChat = (template) => {
     setMessages(template.messages);
     setCurrentChatId(template.id);
+    setshowSuggestions(false);
   };
 
   // 
@@ -177,8 +200,6 @@ const handleSendMessage = async (text) => {
 
 
   try {
-
-
 
     // BACKEND
     // ============================================
@@ -233,38 +254,59 @@ const handleSendMessage = async (text) => {
 
 
   return (
-    <div className="min-h-screen bg-soft-gray dark:bg-dark-bg py-0 px-0 sm:py-10 sm:px-4 transition-colors duration-200">
+    <div className={`min-h-screen py-0 px-0 sm:py-10 sm:px-4 transition-colors duration-200 relative overflow-hidden ${
+      isDark 
+        ? 'bg-gradient-to-br from-gray-900 via-black to-gray-900' 
+        : 'bg-gradient-to-br from-gray-50 via-white to-gray-100'
+    }`} style={isDark ? {
+      background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #000000 100%)'
+    } : {
+      background: 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 50%, #f0f0f0 100%)'
+    }}>
+      
       <SidebarContainer>
         <div className="space-y-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+            <p className={`text-xs font-semibold uppercase tracking-wide ${
+              isDark ? 'text-gray-300' : 'text-gray-600'
+            }`}>
               Chat History
             </p>
 
           </div>
           
           {templates.length === 0 ? (
-            <p className="text-sm text-slate-400 dark:text-slate-500 italic">No saved conversations yet</p>
+            <p className={`text-sm italic ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>No saved conversations yet</p>
           ) : (
             <ul className="space-y-2">
               {templates.map((template) => (
                 <li
                   key={template.id}
                   onClick={() => handleLoadChat(template)}
-                  className={`group relative rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface px-3 py-2 text-sm shadow-sm transition cursor-pointer hover:border-violet-300 dark:hover:border-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 ${
-                    currentChatId === template.id ? 'border-violet-400 dark:border-violet-500 bg-violet-100 dark:bg-violet-900/30' : ''
+                  className={`group relative rounded-xl border backdrop-blur-md px-3 py-2 text-sm shadow-lg transition cursor-pointer ${
+                    isDark
+                      ? `border-gray-700/50 bg-gray-800/30 hover:border-gray-600/50 hover:bg-gray-700/40 ${
+                          currentChatId === template.id ? 'border-pink-500/50 bg-pink-900/20' : ''
+                        }`
+                      : `border-gray-200/50 bg-white/40 hover:border-gray-300/70 hover:bg-white/60 ${
+                          currentChatId === template.id ? 'border-gray-400/70 bg-white/70' : ''
+                        }`
                   }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-700 dark:text-dark-text truncate">{template.title}</p>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      <p className={`font-semibold truncate ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{template.title}</p>
+                      <p className={`mt-1 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                         {template.messages.length} messages
                       </p>
                     </div>
                     <button
                       onClick={(e) => handleDeleteChat(template.id, e)}
-                      className="ml-2 opacity-0 group-hover:opacity-100 p-1 rounded text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+                      className={`ml-2 opacity-0 group-hover:opacity-100 p-1 rounded transition ${
+                        isDark 
+                          ? 'text-gray-400 hover:text-red-400 hover:bg-red-900/20' 
+                          : 'text-gray-500 hover:text-red-500 hover:bg-red-50'
+                      }`}
                       aria-label="Delete chat"
                     >
                       <svg width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2}>
@@ -279,7 +321,9 @@ const handleSendMessage = async (text) => {
           {templates.length > 0 && (
             <button
               onClick={handleClearAllChat}
-              className="w-full mt-4 text-red-400 dark:text-red-500 text-center text-sm font-medium hover:text-red-600 dark:hover:text-red-400 transition cursor-pointer"
+              className={`w-full mt-4 text-center text-sm font-medium transition cursor-pointer ${
+                isDark ? 'text-red-400 hover:text-red-300' : 'text-red-500 hover:text-red-600'
+              }`}
             >
               Clear all chat
             </button>
@@ -287,20 +331,40 @@ const handleSendMessage = async (text) => {
         </div>
       </SidebarContainer>
 
-      <div className="mx-auto flex w-full sm:max-w-3xl flex-col rounded-none sm:rounded-3xl border-0 sm:border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-none sm:shadow-xl overflow-hidden transition-colors duration-200 h-screen sm:h-auto">
-        <header className="border-b border-slate-200 dark:border-dark-border p-4 sm:p-6 flex-shrink-0">
+      <div className={`mx-auto flex w-full sm:max-w-3xl flex-col rounded-none sm:rounded-3xl border backdrop-blur-xl shadow-2xl overflow-hidden transition-all duration-200 h-screen sm:h-auto ${
+        isDark
+          ? 'border-gray-700/30 bg-gray-800/20'
+          : 'border-gray-200/50 bg-white/40'
+      }`} style={{
+        boxShadow: isDark 
+          ? '0 8px 32px 0 rgba(0, 0, 0, 0.5)' 
+          : '0 8px 32px 0 rgba(0, 0, 0, 0.1)'
+      }}>
+        <header className={`border-b backdrop-blur-sm p-4 sm:p-6 flex-shrink-0 ${
+          isDark
+            ? 'border-gray-700/30 bg-gray-800/10'
+            : 'border-gray-200/50 bg-white/30'
+        }`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-500 dark:text-violet-400">
+              <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${
+                isDark ? 'text-pink-400' : 'text-gray-600'
+              }`}>
                 bot assistant
               </p>
-              <h1 className="mt-2 text-xl sm:text-2xl font-semibold text-slate-900 dark:text-dark-text">assistant</h1>
+              <h1 className={`mt-2 text-xl sm:text-2xl font-semibold ${
+                isDark ? 'text-gray-100' : 'text-gray-800'
+              }`}>assistant</h1>
        
             </div>
             <div className="flex items-center gap-2">
               <ThemeToggle />
               <button
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-dark-text shadow-sm transition hover:border-violet-200 dark:hover:border-violet-600 hover:text-violet-600 dark:hover:text-violet-400"
+                className={`inline-flex items-center justify-center gap-2 rounded-full border backdrop-blur-md px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium shadow-lg transition ${
+                  isDark
+                    ? 'border-gray-600/50 bg-gray-700/30 text-gray-200 hover:border-gray-500/70 hover:bg-gray-600/40'
+                    : 'border-gray-300/50 bg-white/50 text-gray-700 hover:border-gray-400/70 hover:bg-white/70'
+                }`}
                 aria-label="New chat"
                 onClick={handleNewChat}
               >
@@ -313,53 +377,63 @@ const handleSendMessage = async (text) => {
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 overflow-y-auto bg-warm-white dark:bg-dark-bg transition-colors duration-200">
-       {showSuggestions && (
-
-<div className="flex flex-col items-center justify-center min-h-[300px] sm:min-h-[400px]">
-<p className="text-base sm:text-lg font-semibold text-slate-700 dark:text-dark-text mb-4 sm:mb-6">How can I help you today?</p>
-<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
-  {suggest.map((s, i) => (
-    <button
-      key={i}
-      onClick={() => handleSuggestClick(s)}
-      className="rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface px-4 py-3 text-sm text-slate-700 dark:text-dark-text shadow-sm transition hover:border-violet-300 dark:hover:border-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:text-violet-700 dark:hover:text-violet-400 text-left"
-    >
-      {s}
-    </button>
-  ))}
-</div>
-
-<>
+        <main className={`flex-1 p-4 sm:p-6 overflow-y-auto backdrop-blur-sm transition-colors duration-200 ${
+          isDark ? 'bg-gray-900/10' : 'bg-white/20'
+        }`}>
+          {showSuggestions && messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center min-h-[300px] sm:min-h-[400px]">
+              <p className="text-2xl sm:text-4xl md:text-2xl font-semibold mb-4 sm:mb-6">
+                {isDark ? (
+                  <span className="bg-gradient-to-r from-pink-400 via-pink-500 to-pink-600 bg-clip-text text-transparent">
+                    {typewriterText}
+                  </span>
+                ) : (
+                  <span className="bg-gradient-to-r from-pink-400 via-pink-500 to-pink-600 bg-clip-text text-transparent">
+                  {typewriterText}
+                </span>
+                )}
+                <span className={`animate-pulse ${isDark ? 'text-pink-400' : 'text-gray-700'}`}>|</span>
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
+                {suggest.map((s, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleSuggestClick(s)}
+                    className={`rounded-xl border backdrop-blur-md px-4 py-3 text-sm shadow-lg transition text-left ${
+                      isDark
+                        ? 'border-gray-700/50 bg-gray-800/30 text-gray-200 hover:border-pink-500/50 hover:bg-pink-900/20'
+                        : 'border-gray-200/50 bg-white/50 text-gray-700 hover:border-gray-300/70 hover:bg-white/70'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <>
               <ChatMessage messages={messages} />
               {isLoading && (
-                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mt-4">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-violet-500 dark:border-violet-400 border-t-transparent"></div>
+                <div className={`flex items-center gap-2 text-sm mt-4 ${
+                  isDark ? 'text-gray-300' : 'text-gray-600'
+                }`}>
+                  <div className={`h-4 w-4 animate-spin rounded-full border-2 ${
+                    isDark 
+                      ? 'border-pink-500/30 border-t-pink-400' 
+                      : 'border-gray-300 border-t-gray-600'
+                  }`}></div>
                   <span>Bot is typing...</span>
                 </div>
               )}
-              
             </>
-</div>
-
-       )}
-      
-      <>
-              <ChatMessage messages={messages} />
-              {isLoading && (
-                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mt-4">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-violet-500 dark:border-violet-400 border-t-transparent"></div>
-                  <span>Bot is typing...</span>
-                </div>
-              )}
-
-              
-            </>
-          
-     
+          )}
         </main>
 
-        <footer className="border-t border-slate-200 dark:border-dark-border p-4 sm:p-6 flex-shrink-0 bg-white dark:bg-dark-surface transition-colors duration-200">
+        <footer className={`border-t backdrop-blur-sm p-4 sm:p-6 flex-shrink-0 transition-colors duration-200 ${
+          isDark
+            ? 'border-gray-700/30 bg-gray-800/10'
+            : 'border-gray-200/50 bg-white/30'
+        }`}>
           <ChatbotInput onSend={handleSendMessage} disabled={isLoading} />
         </footer>
       </div>

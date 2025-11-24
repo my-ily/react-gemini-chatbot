@@ -1,7 +1,9 @@
-
 import { useState } from 'react';
+import { useTheme } from '../context/ThemeContext';
 
 export default function SidebarContainer({ children }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -9,7 +11,11 @@ export default function SidebarContainer({ children }) {
       <div className="fixed top-4 left-4 sm:top-6 sm:left-6 z-40 flex items-center gap-2">
         {!isOpen && (
           <button
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface px-3 sm:px-4 py-2 text-sm font-medium text-slate-600 dark:text-dark-text shadow-sm transition hover:border-violet-200 dark:hover:border-violet-600 hover:text-violet-600 dark:hover:text-violet-400"
+            className={`inline-flex items-center gap-2 rounded-full border backdrop-blur-md px-3 sm:px-4 py-2 text-sm font-medium shadow-lg transition ${
+              isDark
+                ? 'border-gray-600/50 bg-gray-800/30 text-gray-200 hover:border-gray-500/70 hover:bg-gray-700/40'
+                : 'border-gray-300/50 bg-white/50 text-gray-700 hover:border-gray-400/70 hover:bg-white/70'
+            }`}
             onClick={() => setIsOpen(true)}
             aria-label="Open sidebar"
           >
@@ -21,14 +27,33 @@ export default function SidebarContainer({ children }) {
       </div>
       
       <div
-        className={`fixed inset-y-0 left-0 z-30 w-full sm:w-72 transform bg-white dark:bg-dark-surface shadow-2xl transition-transform duration-300 ${
+        className={`fixed inset-y-0 left-0 z-30 w-full sm:w-72 transform backdrop-blur-xl border-r shadow-2xl transition-transform duration-300 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
+        } ${
+          isDark
+            ? 'bg-gray-800/20 border-gray-700/30'
+            : 'bg-white/40 border-gray-200/50'
         }`}
+        style={{
+          boxShadow: isDark 
+            ? '0 8px 32px 0 rgba(0, 0, 0, 0.5)' 
+            : '0 8px 32px 0 rgba(0, 0, 0, 0.1)'
+        }}
       >
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-dark-border px-4 py-3">
-          <p className="text-sm font-semibold text-slate-900 dark:text-dark-text">Chat history</p>
+        <div className={`flex items-center justify-between border-b px-4 py-3 backdrop-blur-sm ${
+          isDark
+            ? 'border-gray-700/30 bg-gray-800/10'
+            : 'border-gray-200/50 bg-white/30'
+        }`}>
+          <p className={`text-sm font-semibold ${
+            isDark ? 'text-gray-200' : 'text-gray-800'
+          }`}>Chat history</p>
           <button
-            className="rounded-full p-2 text-slate-400 dark:text-slate-500 transition hover:bg-slate-100 dark:hover:bg-dark-border hover:text-slate-600 dark:hover:text-slate-300"
+            className={`rounded-full p-2 transition ${
+              isDark
+                ? 'text-gray-400 hover:bg-gray-700/40 hover:text-gray-200'
+                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+            }`}
             onClick={() => setIsOpen(false)}
             aria-label="Close sidebar"
           >
@@ -42,7 +67,9 @@ export default function SidebarContainer({ children }) {
 
       {isOpen && (
         <div
-          className="fixed inset-0 z-20 bg-slate-900/40 dark:bg-slate-950/60 backdrop-blur-sm"
+          className={`fixed inset-0 z-20 backdrop-blur-sm ${
+            isDark ? 'bg-black/30' : 'bg-black/10'
+          }`}
           onClick={() => setIsOpen(false)}
         />
       )}
